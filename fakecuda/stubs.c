@@ -55,3 +55,30 @@ int fake_runtime_missing(int *reported, const char *name) {
     FAKE_LOG("MISSING (CALLED): %s", name);
   return cudaErrorNotSupported;
 }
+
+static int driver_missing(int *reported, const char *name) {
+  if (!__atomic_exchange_n(reported, 1, __ATOMIC_RELAXED))
+    fprintf(stderr, "[fakecuda] MISSING (CALLED): %s\n", name);
+  else
+    FAKE_LOG("MISSING (CALLED): %s", name);
+  return CUDA_ERROR_NOT_SUPPORTED;
+}
+
+#define DSTUB(name) \
+  int name(void) { static int reported; return driver_missing(&reported, #name); }
+DSTUB(cuLinkCreate_v2)
+DSTUB(cuLinkAddData_v2)
+DSTUB(cuLinkComplete)
+DSTUB(cuLinkDestroy)
+DSTUB(cuStreamBeginCapture_v2)
+DSTUB(cuStreamEndCapture)
+DSTUB(cuGraphInstantiate)
+DSTUB(cuGraphLaunch)
+DSTUB(cuGraphDestroy)
+DSTUB(cuGraphExecDestroy)
+DSTUB(cuGraphGetNodes)
+DSTUB(cuGraphNodeGetType)
+DSTUB(cuGraphKernelNodeGetParams)
+DSTUB(cuGraphExecKernelNodeSetParams)
+DSTUB(cuMemPrefetchAsync_v2)
+DSTUB(cuStreamGetCaptureInfo_v3)

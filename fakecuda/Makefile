@@ -1,7 +1,11 @@
 SP ?= ../.venv/lib/python3.12/site-packages/nvidia
 CUDA_INC ?= -I$(SP)/cuda_runtime/include -I$(SP)/cuda_nvcc/include
 CUDART ?= $(SP)/cuda_runtime/lib/libcudart.so.12
-SRCS = device.c runtime.c driver.c nvml.c memory.c launch.c stream.c stubs.c runtime_stubs.c
+CUBLAS_LIB ?= $(SP)/cublas/lib
+PYTHON ?= ../.venv/bin/python
+SRCS = device.c runtime.c driver.c nvml.c memory.c launch.c stream.c stubs.c runtime_stubs.c \
+       darkapi.c procaddr.c
+TESTS = tests/test_darkapi tests/test_sgemm
 
 all: libfakecuda.so lib/libnvidia-ml.so.1
 
@@ -15,16 +19,20 @@ lib/libnvidia-ml.so.1:
 	mkdir -p lib
 	ln -sf ../libfakecuda.so $@
 
-tests/test_procaddress: tests/test_procaddress.c
+tests/test_darkapi: tests/test_darkapi.c
 	gcc -O2 -Wall -o $@ $< -ldl
 
-test: all tests/test_procaddress
-	./run ./tests/test_procaddress
-	./run ../.venv/bin/python tests/test_nvml.py
-	./run ../.venv/bin/python tests/test_memory.py
-	./run ../.venv/bin/python tests/test_kernels.py
+tests/test_sgemm: tests/test_sgemm.c
+	gcc -O2 -Wall $(CUDA_INC) -o $@ $< $(CUBLAS_LIB)/libcublas.so.12 $(CUDART) \
+	  -Wl,-rpath,$(abspath $(CUBLAS_LIB)):$(abspath $(dir $(CUDART)))
+
+test: all $(TESTS)
+	./run ./tests/test_darkapi
+	./run ./tests/test_sgemm
+	./run $(PYTHON) tests/test_matmul.py
+	./run $(PYTHON) demo.py
 
 clean:
-	rm -rf *.so lib tests/test_procaddress runtime_stubs.c
+	rm -rf *.so lib $(TESTS) runtime_stubs.c
 
 .PHONY: all test clean

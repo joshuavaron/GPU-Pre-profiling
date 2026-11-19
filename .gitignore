@@ -3,4 +3,5 @@ __pycache__/
 *.so
 *.so.*
 lib/
-fakecuda/tests/test_procaddress
+fakecuda/tests/test_darkapi
+fakecuda/tests/test_sgemm
