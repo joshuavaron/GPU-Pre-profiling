@@ -22,6 +22,9 @@ static inline void fake_ctx_touch(int dev) { __atomic_store_n(&fake_ctx_active[d
 
 int fake_device_attr(int attr, int dev);
 
+void *fake_primary_ctx(int dev);
+int fake_ctx_device(void *ctx);
+
 int fake_get_proc_address(const char *symbol, void **pfn, int version,
                           unsigned long long flags, int *status);
 
@@ -34,3 +37,10 @@ int fake_host_alloc(size_t size, void **out);
 int fake_host_free(void *ptr);
 size_t fake_mem_used(int device);
 int fake_mem_lookup(const void *ptr, int *device);
+int fake_mem_range(const void *ptr, int *device, void **base, size_t *size);
+
+int fake_launch(const char *api, const char *name, dim3 grid, dim3 block, size_t shmem,
+                size_t max_dyn_shmem, const void *stream);
+
+void *fake_stream_object(int dev, cudaStream_t s, int per_thread);
+unsigned long long fake_stream_id(void *object);
