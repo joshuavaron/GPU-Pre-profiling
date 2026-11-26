@@ -2,6 +2,6 @@ libcudart.so.12 {
   global: cuda*; __cuda*;
 };
 FAKECUDA_1 {
-  global: cu[A-Z]*; nvml*;
+  global: cu[A-Z]*; nvml*; fake_register_callback;
   local: *;
 };

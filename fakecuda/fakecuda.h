@@ -1,4 +1,5 @@
 #pragma once
+#include "events.h"
 #include <cuda_runtime_api.h>
 #include <stdio.h>
 
@@ -44,3 +45,6 @@ int fake_launch(const char *api, const char *name, dim3 grid, dim3 block, size_t
 
 void *fake_stream_object(int dev, cudaStream_t s, int per_thread);
 unsigned long long fake_stream_id(void *object);
+
+void fire_callback(const struct fake_event *e);
+void fake_load_plugins(void);

@@ -4,16 +4,21 @@ CUDART ?= $(SP)/cuda_runtime/lib/libcudart.so.12
 CUBLAS_LIB ?= $(SP)/cublas/lib
 PYTHON ?= ../.venv/bin/python
 SRCS = device.c runtime.c driver.c nvml.c memory.c launch.c stream.c stubs.c runtime_stubs.c \
-       darkapi.c procaddr.c
+       darkapi.c procaddr.c events.c
 TESTS = tests/test_darkapi tests/test_sgemm
 
-all: libfakecuda.so lib/libnvidia-ml.so.1
+all: libfakecuda.so lib/libnvidia-ml.so.1 plugins
 
-libfakecuda.so: $(SRCS) fakecuda.h libcudart.map
+libfakecuda.so: $(SRCS) fakecuda.h events.h libcudart.map
 	gcc -O2 -Wall -shared -fPIC $(CUDA_INC) -Wl,--version-script=libcudart.map,-soname,libcuda.so.1 -o $@ $(SRCS) -lpthread -ldl
 
 runtime_stubs.c: tools/gen_runtime_stubs.sh
 	sh tools/gen_runtime_stubs.sh $(CUDART) > $@
+
+plugins: plugins/libexample_counter.so
+
+plugins/libexample_counter.so: plugins/example_counter.c events.h
+	gcc -O2 -Wall -shared -fPIC -o $@ $< -lpthread
 
 lib/libnvidia-ml.so.1:
 	mkdir -p lib
@@ -33,6 +38,6 @@ test: all $(TESTS)
 	./run $(PYTHON) demo.py
 
 clean:
-	rm -rf *.so lib $(TESTS) runtime_stubs.c
+	rm -rf *.so plugins/*.so lib $(TESTS) runtime_stubs.c
 
-.PHONY: all test clean
+.PHONY: all plugins test clean
