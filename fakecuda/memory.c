@@ -26,10 +26,11 @@ static void track_add(char *ptr, size_t size, int device) {
   if (device >= 0) used[device] += size;
 }
 
-static int track_remove(void *ptr, int want_host, size_t *size) {
+static int track_remove(void *ptr, int want_host, size_t *size, int *device) {
   for (size_t i = 0; i < n_allocs; i++) {
     if (allocs[i].ptr != ptr || (allocs[i].device < 0) != want_host) continue;
     *size = allocs[i].size;
+    *device = allocs[i].device;
     if (allocs[i].device >= 0) used[allocs[i].device] -= allocs[i].size;
     allocs[i] = allocs[--n_allocs];
     return 1;
@@ -54,17 +55,39 @@ int fake_mem_alloc(int device, size_t size, void **out) {
     r = FAKE_MEM_OK;
   }
   pthread_mutex_unlock(&mem_lock);
+
+  struct fake_event e;
+  memset(&e, 0, sizeof e);
+  if (r == FAKE_MEM_OK)
+    e.type = FAKE_EVENT_ALLOC;
+  else
+    e.type = FAKE_EVENT_ALLOC_FAILED;
+  e.api = "fake_mem_alloc";
+  e.device = device;
+  e.ptr = *out;
+  e.size = size;
+  fire_callback(&e);
   return r;
 }
 
 int fake_mem_free(void *ptr) {
   if (!ptr) return FAKE_MEM_OK;
   size_t size;
+  int device;
   pthread_mutex_lock(&mem_lock);
-  int found = track_remove(ptr, 0, &size);
+  int found = track_remove(ptr, 0, &size, &device);
   pthread_mutex_unlock(&mem_lock);
   if (!found) return FAKE_MEM_INVALID;
   munmap(ptr, size);
+
+  struct fake_event e;
+  memset(&e, 0, sizeof e);
+  e.type = FAKE_EVENT_FREE;
+  e.api = "fake_mem_free";
+  e.device = device;
+  e.ptr = ptr;
+  e.size = size;
+  fire_callback(&e);
   return FAKE_MEM_OK;
 }
 
@@ -81,8 +104,9 @@ int fake_host_alloc(size_t size, void **out) {
 int fake_host_free(void *ptr) {
   if (!ptr) return FAKE_MEM_OK;
   size_t size;
+  int device;
   pthread_mutex_lock(&mem_lock);
-  int found = track_remove(ptr, 1, &size);
+  int found = track_remove(ptr, 1, &size, &device);
   pthread_mutex_unlock(&mem_lock);
   if (!found) return FAKE_MEM_INVALID;
   munmap(ptr, size);

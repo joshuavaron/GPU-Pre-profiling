@@ -118,6 +118,7 @@ __attribute__((constructor)) static void fakecuda_init(void) {
     p->pciBusID = i + 1;
   }
   FAKE_LOG("loaded: %d x %s", fake_device_count, fake_devices[0].name);
+  fake_load_plugins();
 }
 
 int fake_device_attr(int attr, int dev) {

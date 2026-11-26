@@ -157,7 +157,23 @@ int fake_launch(const char *api, const char *name, dim3 g, dim3 b, size_t shmem,
   if (fake_log || !ok)
     fprintf(stderr, "[fakecuda] %s %s grid=(%u,%u,%u) block=(%u,%u,%u) shmem=%zu stream=%p = %s\n",
             api, name, g.x, g.y, g.z, b.x, b.y, b.z, shmem, stream, ok ? "ok (not executed)" : "invalid config");
-  if (ok) fake_ctx_touch(fake_current_device);
+  if (ok) {
+    fake_ctx_touch(fake_current_device);
+
+    struct fake_event e;
+    memset(&e, 0, sizeof e);
+    e.type = FAKE_EVENT_LAUNCH;
+    e.api = api;
+    e.device = fake_current_device;
+    e.kernel = name;
+    e.grid.x = g.x;
+    e.grid.y = g.y;
+    e.grid.z = g.z;
+    e.block.x = b.x;
+    e.block.y = b.y;
+    e.block.z = b.z;
+    fire_callback(&e);
+  }
   return ok;
 }
 
