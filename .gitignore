@@ -5,3 +5,6 @@ __pycache__/
 lib/
 fakecuda/tests/test_darkapi
 fakecuda/tests/test_sgemm
+
+# Local project context distilled from chats (not for commit)
+PROJECT_CONTEXT.md
